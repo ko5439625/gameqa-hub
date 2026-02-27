@@ -86,11 +86,13 @@ const COMMAND_SECTIONS: Array<{
   }
 ]
 
-const PRIORITY_ICONS: Record<string, string> = {
-  Highest: '🔴', High: '🔴', Medium: '🟡', Low: '🟢', Lowest: '🟢'
+const EXT_ICONS: Record<string, string> = {
+  '.ahk': '🎮', '.ps1': '💠', '.bat': '📦', '.cmd': '📦',
+  '.py': '🐍', '.js': '🟨', '.vbs': '📜'
 }
-const STATUS_COLORS: Record<string, string> = {
-  new: '#60a5fa', indeterminate: '#f59e0b', done: '#34d399'
+const EXT_COLORS: Record<string, string> = {
+  '.ahk': '#34d399', '.ps1': '#60a5fa', '.bat': '#f59e0b', '.cmd': '#f59e0b',
+  '.py': '#a78bfa', '.js': '#fbbf24', '.vbs': '#fb923c'
 }
 
 // Shared styles
@@ -162,118 +164,97 @@ function CollapsibleSection({ title, icon, color, defaultOpen, badge, onRefresh,
   )
 }
 
-// --- Jira Section ---
-function JiraSection({ refreshKey }: { refreshKey: number }): JSX.Element {
-  const [issues, setIssues] = useState<JiraIssue[]>([])
+// --- Macro Section ---
+function MacroSection({ refreshKey }: { refreshKey: number }): JSX.Element {
+  const [macros, setMacros] = useState<MacroFile[]>([])
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [configured, setConfigured] = useState(false)
+  const [runningMacro, setRunningMacro] = useState<string | null>(null)
 
   useEffect(() => {
-    const load = async (): Promise<void> => {
-      try {
-        const config = await window.api.getStore('apiConfig') as Record<string, Record<string, string>> | null
-        const jira = config?.jira
-        if (!jira?.baseUrl || !jira?.email || !jira?.apiToken) {
-          setConfigured(false)
-          return
-        }
-        setConfigured(true)
-        setLoading(true)
-        setError(null)
-
-        const keys = (jira.projectKeys || '').split(',').map(k => k.trim()).filter(Boolean)
-        const data = await window.api.getJiraIssues(keys)
-        setIssues(data)
-      } catch (e) {
-        setError((e as Error).message || '이슈 로딩 실패')
-      } finally {
-        setLoading(false)
-      }
-    }
-    load()
+    setLoading(true)
+    window.api.getMacros().then((data) => {
+      setMacros(data)
+      setLoading(false)
+    }).catch(() => setLoading(false))
   }, [refreshKey])
 
-  if (!configured) {
-    return (
-      <div style={{
-        textAlign: 'center', padding: '20px 12px', color: 'rgba(255,255,255,0.2)', fontSize: 11
-      }}>
-        Jira 연동이 설정되지 않았습니다
-        <div style={{ fontSize: 10, marginTop: 4, color: 'rgba(255,255,255,0.12)' }}>
-          ··· → API 설정에서 Jira 정보를 입력하세요
-        </div>
-      </div>
-    )
+  const handleRun = async (macro: MacroFile): Promise<void> => {
+    setRunningMacro(macro.name)
+    try {
+      await window.api.runMacro(macro.path)
+    } catch { /* ignore */ }
+    setTimeout(() => setRunningMacro(null), 1500)
   }
 
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: 20, color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>
-        이슈 로딩 중...
+        매크로 로딩 중...
       </div>
     )
   }
 
-  if (error) {
+  if (macros.length === 0) {
     return (
       <div style={{
-        padding: 12, borderRadius: 8,
-        background: 'rgba(248,113,113,0.06)', border: '1px solid rgba(248,113,113,0.15)',
-        fontSize: 11, color: '#f87171'
+        textAlign: 'center', padding: '20px 12px', color: 'rgba(255,255,255,0.2)', fontSize: 11
       }}>
-        {error}
-      </div>
-    )
-  }
-
-  if (issues.length === 0) {
-    return (
-      <div style={{ textAlign: 'center', padding: 20, color: 'rgba(255,255,255,0.2)', fontSize: 11 }}>
-        할당된 이슈가 없습니다
+        등록된 매크로가 없습니다
+        <div style={{ fontSize: 10, marginTop: 4, color: 'rgba(255,255,255,0.12)' }}>
+          ~/.claude/macros/ 폴더에 스크립트를 넣으세요
+        </div>
+        <div style={{ fontSize: 9, marginTop: 6, color: 'rgba(255,255,255,0.1)' }}>
+          지원: .ahk .ps1 .bat .py .js .vbs
+        </div>
       </div>
     )
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      {issues.map((issue) => (
-        <div key={issue.key} style={{
-          padding: '8px 12px', borderRadius: 8,
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(255,255,255,0.06)',
-          display: 'flex', alignItems: 'center', gap: 8
-        }}>
-          <span style={{ fontSize: 12, flexShrink: 0 }}>
-            {PRIORITY_ICONS[issue.priority] || '⚪'}
-          </span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 10, color: '#60a5fa', fontWeight: 600, fontFamily: 'Consolas, monospace', flexShrink: 0 }}>
-                {issue.key}
-              </span>
-              <span style={{
-                fontSize: 11, color: 'rgba(255,255,255,0.7)',
+      {macros.map((macro) => {
+        const isRunning = runningMacro === macro.name
+        const color = EXT_COLORS[macro.ext] || '#60a5fa'
+        return (
+          <button key={macro.name} onClick={() => handleRun(macro)}
+            style={{
+              padding: '8px 12px', borderRadius: 8, width: '100%',
+              background: isRunning ? `${color}12` : 'rgba(255,255,255,0.03)',
+              border: `1px solid ${isRunning ? `${color}30` : 'rgba(255,255,255,0.06)'}`,
+              display: 'flex', alignItems: 'center', gap: 8,
+              cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = `${color}10`; e.currentTarget.style.borderColor = `${color}25` }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = isRunning ? `${color}12` : 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = isRunning ? `${color}30` : 'rgba(255,255,255,0.06)' }}>
+            <span style={{ fontSize: 14, flexShrink: 0 }}>
+              {EXT_ICONS[macro.ext] || '📄'}
+            </span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{
+                fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: 500,
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
               }}>
-                {issue.summary}
-              </span>
+                {macro.name}
+              </div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>
+                {macro.description}
+              </div>
             </div>
-          </div>
-          <span style={{
-            fontSize: 9, padding: '2px 8px', borderRadius: 10, flexShrink: 0,
-            background: `${STATUS_COLORS[issue.statusCategory] || '#60a5fa'}18`,
-            color: STATUS_COLORS[issue.statusCategory] || '#60a5fa',
-            fontWeight: 600
-          }}>
-            {issue.status}
-          </span>
-        </div>
-      ))}
+            <span style={{
+              fontSize: 9, padding: '2px 8px', borderRadius: 10, flexShrink: 0,
+              background: isRunning ? `rgba(52,211,153,0.15)` : `${color}15`,
+              color: isRunning ? '#34d399' : color,
+              fontWeight: 600, transition: 'all 0.15s'
+            }}>
+              {isRunning ? '실행됨!' : '실행'}
+            </span>
+          </button>
+        )
+      })}
       <div style={{
         textAlign: 'center', fontSize: 9, color: 'rgba(255,255,255,0.15)', marginTop: 4
       }}>
-        {issues.length}건 표시
+        {macros.length}개 매크로 · ~/.claude/macros/
       </div>
     </div>
   )
@@ -284,7 +265,7 @@ export default function WorkTab(): JSX.Element {
   const { skills, recentSkills, selectedCategory, setSelectedCategory, launchSkill } = useHubStore()
   const [expandedSection, setExpandedSection] = useState<string | null>(null)
   const [copiedCmd, setCopiedCmd] = useState<string | null>(null)
-  const [jiraRefreshKey, setJiraRefreshKey] = useState(0)
+  const [macroRefreshKey, setMacroRefreshKey] = useState(0)
 
   const copyCommand = (cmd: string): void => {
     navigator.clipboard.writeText(cmd)
@@ -356,10 +337,10 @@ export default function WorkTab(): JSX.Element {
   return (
     <div style={{ height: '100%', overflowY: 'auto', padding: '12px 16px' }}>
 
-      {/* ▾ Jira 이슈 섹션 (위에 배치) */}
-      <CollapsibleSection title="Jira 이슈" icon="🔵" color="#60a5fa" defaultOpen={false}
-        onRefresh={() => setJiraRefreshKey((k) => k + 1)}>
-        <JiraSection refreshKey={jiraRefreshKey} />
+      {/* ▾ 매크로 섹션 (위에 배치) */}
+      <CollapsibleSection title="매크로" icon="⚡" color="#34d399" defaultOpen={false}
+        onRefresh={() => setMacroRefreshKey((k) => k + 1)}>
+        <MacroSection refreshKey={macroRefreshKey} />
       </CollapsibleSection>
 
       {/* ▾ 스킬 섹션 */}

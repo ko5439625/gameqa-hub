@@ -8,6 +8,14 @@ type Skill = {
   techStack?: string
 }
 
+type Project = {
+  id: string
+  name: string
+  path: string
+  techStack: string
+  createdAt: number
+}
+
 type GitStatus = {
   projectPath: string
   branch: string
@@ -37,12 +45,12 @@ type Bookmark = {
   url: string
 }
 
-type JiraIssue = {
-  key: string
-  summary: string
-  status: string
-  statusCategory: 'new' | 'indeterminate' | 'done'
-  priority: string
+type MacroFile = {
+  name: string
+  path: string
+  ext: string
+  description: string
+  modifiedTime: number
 }
 
 interface HubAPI {
@@ -71,7 +79,10 @@ interface HubAPI {
   getMemoryFiles(): Promise<Array<{ name: string; label: string }>>
   getMemoryContent(fileName: string): Promise<string>
   setOpacity(value: number): Promise<void>
-  getJiraIssues(projectKeys: string[]): Promise<JiraIssue[]>
+  getMacros(): Promise<MacroFile[]>
+  runMacro(filePath: string): Promise<{ success: boolean; error?: string }>
+  getRegisteredProjects(): Promise<Project[]>
+  saveRegisteredProjects(projects: Project[]): Promise<void>
   onSkillsUpdated(cb: (skills: Skill[]) => void): () => void
   onGitStatusUpdated(cb: (statuses: Record<string, GitStatus>) => void): () => void
 }

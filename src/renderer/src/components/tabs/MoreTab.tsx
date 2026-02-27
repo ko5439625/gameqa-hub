@@ -11,7 +11,7 @@ const menuItems: Array<{ id: SubPage; icon: string; label: string; desc: string;
   { id: 'ideas', icon: '💡', label: '아이디어 백업', desc: '채택 아이디어 월별 자동 저장', color: '#f472b6' },
   { id: 'stats', icon: '📊', label: '통계', desc: '스킬 사용량, 활동 리포트', color: '#34d399' },
   { id: 'routines', icon: '🔄', label: '루틴', desc: '요일별 반복 작업 설정', color: '#fb923c' },
-  { id: 'api-settings', icon: '🔑', label: 'API 설정', desc: 'Jira, Supabase 등 연동 관리', color: '#fbbf24' }
+  { id: 'api-settings', icon: '🔑', label: 'API 설정', desc: 'Supabase 등 연동 관리', color: '#fbbf24' }
 ]
 
 const backBtnStyle: React.CSSProperties = {
@@ -185,15 +185,6 @@ function ApiSettingsPage(): JSX.Element {
   }
 
   const services = [
-    {
-      id: 'jira', label: 'Jira', icon: '🔵', color: '#60a5fa',
-      fields: [
-        { key: 'baseUrl', label: 'URL', placeholder: 'https://your-team.atlassian.net' },
-        { key: 'email', label: 'Email', placeholder: 'your-email@company.com' },
-        { key: 'apiToken', label: 'API Token', placeholder: 'ATATT3x...', secret: true },
-        { key: 'projectKeys', label: '프로젝트 키', placeholder: 'QA, GAMEQA (쉼표 구분, 비워두면 전체)' }
-      ]
-    },
     {
       id: 'supabase', label: 'Supabase', icon: '🟢', color: '#34d399',
       fields: [

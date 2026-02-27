@@ -44,6 +44,7 @@ const CATEGORY_MAP: Record<string, Skill['category']> = {
   플레이테스트: 'ux',
   피드백정리: 'ux',
   블로그: 'blog',
+  프로젝트등록: 'dev',
 }
 
 // SKILL.md 내용 기반 자동 분류

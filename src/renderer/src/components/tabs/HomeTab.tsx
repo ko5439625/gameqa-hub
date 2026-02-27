@@ -73,7 +73,9 @@ function getWeekStart(): number {
 
 export default function HomeTab(): JSX.Element {
   const { skills, gitStatuses, recentSkills, launchSkill } = useHubStore()
-  const projects = skills.filter((s) => s.projectPath)
+
+  // Registered projects (독립 관리)
+  const [registeredProjects, setRegisteredProjects] = useState<Project[]>([])
 
   // Daily Standup - fetch yesterday's commits
   const [standupData, setStandupData] = useState<CommitsByProject[]>([])
@@ -87,20 +89,24 @@ export default function HomeTab(): JSX.Element {
   // Routines
   const [routines, setRoutines] = useState<Routine[]>([])
 
+  // Load registered projects
+  useEffect(() => {
+    window.api.getRegisteredProjects().then((p) => setRegisteredProjects(p))
+  }, [])
+
   useEffect(() => {
     const fetchCommits = async (): Promise<void> => {
       const results: CommitsByProject[] = []
-      for (const p of projects) {
-        if (!p.projectPath) continue
-        const commits = await window.api.getRecentCommits(p.projectPath, 'yesterday')
+      for (const p of registeredProjects) {
+        const commits = await window.api.getRecentCommits(p.path, 'yesterday')
         if (commits.length > 0) {
           results.push({ project: p.name, commits })
         }
       }
       setStandupData(results)
     }
-    if (projects.length > 0) fetchCommits()
-  }, [skills.length])
+    if (registeredProjects.length > 0) fetchCommits()
+  }, [registeredProjects.length])
 
   // Load goals
   useEffect(() => {
@@ -141,6 +147,12 @@ export default function HomeTab(): JSX.Element {
     saveGoals(goals.filter((g) => g.id !== id))
   }
 
+  const deleteProject = (id: string): void => {
+    const updated = registeredProjects.filter((p) => p.id !== id)
+    setRegisteredProjects(updated)
+    window.api.saveRegisteredProjects(updated)
+  }
+
   const standupText = standupData.length > 0
     ? '어제 한 일:\n' + standupData.map((p) =>
         `• ${p.project}: ${p.commits.map((c) => c.message).join(', ')}`
@@ -158,9 +170,8 @@ export default function HomeTab(): JSX.Element {
   const recommendations: Recommendation[] = []
 
   // Rule: Stale projects (7+ days)
-  for (const project of projects) {
-    if (!project.projectPath) continue
-    const git = gitStatuses[project.projectPath]
+  for (const project of registeredProjects) {
+    const git = gitStatuses[project.path]
     if (!git?.lastCommitTime) continue
     const days = getDaysAgo(git.lastCommitTime)
     if (days >= 7) {
@@ -168,32 +179,28 @@ export default function HomeTab(): JSX.Element {
         icon: '🔴',
         text: `${project.name} ${days}일째 방치`,
         color: '#f87171',
-        priority: days >= 14 ? 0 : 1,
-        action: () => launchSkill(project.name, project.projectPath)
+        priority: days >= 14 ? 0 : 1
       })
     } else if (days >= 3) {
       recommendations.push({
         icon: '🟡',
         text: `${project.name} ${days}일째 미작업`,
         color: '#fbbf24',
-        priority: 2,
-        action: () => launchSkill(project.name, project.projectPath)
+        priority: 2
       })
     }
   }
 
   // Rule: Unpushed changes
-  for (const project of projects) {
-    if (!project.projectPath) continue
-    const git = gitStatuses[project.projectPath]
+  for (const project of registeredProjects) {
+    const git = gitStatuses[project.path]
     if (!git) continue
     if (git.ahead > 0) {
       recommendations.push({
         icon: '⬆️',
         text: `${project.name}에 push 안 된 커밋 ${git.ahead}개`,
         color: '#60a5fa',
-        priority: 3,
-        action: () => launchSkill(project.name, project.projectPath)
+        priority: 3
       })
     }
   }
@@ -250,17 +257,17 @@ export default function HomeTab(): JSX.Element {
 
   recommendations.sort((a, b) => a.priority - b.priority)
 
-  // Project summary - only count projects with actual git data
-  const projectsWithGit = projects.filter((p) => {
-    const git = p.projectPath ? gitStatuses[p.projectPath] : null
+  // Project summary - only count registered projects with actual git data
+  const projectsWithGit = registeredProjects.filter((p) => {
+    const git = gitStatuses[p.path]
     return git?.lastCommitTime
   })
-  const activeCount = projectsWithGit.filter((p) => getDaysAgo(gitStatuses[p.projectPath!].lastCommitTime!) <= 3).length
+  const activeCount = projectsWithGit.filter((p) => getDaysAgo(gitStatuses[p.path].lastCommitTime!) <= 3).length
   const cautionCount = projectsWithGit.filter((p) => {
-    const days = getDaysAgo(gitStatuses[p.projectPath!].lastCommitTime!)
+    const days = getDaysAgo(gitStatuses[p.path].lastCommitTime!)
     return days > 3 && days <= 7
   }).length
-  const staleCount = projectsWithGit.filter((p) => getDaysAgo(gitStatuses[p.projectPath!].lastCommitTime!) > 7).length
+  const staleCount = projectsWithGit.filter((p) => getDaysAgo(gitStatuses[p.path].lastCommitTime!) > 7).length
 
   return (
     <div style={{ height: '100%', overflowY: 'auto', padding: '12px 16px' }}>
@@ -493,37 +500,59 @@ export default function HomeTab(): JSX.Element {
       <div style={{ marginBottom: 16 }}>
         <div style={sectionLabel}>프로젝트 현황</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {projects.map((project) => {
-            const git = project.projectPath ? gitStatuses[project.projectPath] : null
+          {registeredProjects.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '16px 12px', color: 'rgba(255,255,255,0.2)', fontSize: 11 }}>
+              등록된 프로젝트가 없습니다
+              <div style={{ fontSize: 10, marginTop: 4, color: 'rgba(255,255,255,0.12)' }}>
+                Claude Code에서 /프로젝트등록 으로 추가하세요
+              </div>
+            </div>
+          )}
+          {registeredProjects.map((project) => {
+            const git = gitStatuses[project.path]
             const days = git?.lastCommitTime ? getDaysAgo(git.lastCommitTime) : null
             const statusIcon = days === null ? '⚪' : days <= 3 ? '🟢' : days <= 7 ? '🟡' : '🔴'
             const timeStr = git?.lastCommitTime ? formatTimeAgo(git.lastCommitTime) : '-'
             return (
-              <button key={project.name}
-                onClick={() => launchSkill(project.name, project.projectPath)}
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '8px 12px', borderRadius: 8,
-                  background: 'rgba(255,255,255,0.02)',
-                  border: '1px solid rgba(255,255,255,0.04)',
-                  cursor: 'pointer', transition: 'all 0.15s ease',
-                  width: '100%', textAlign: 'left'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.02)'
-                }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div key={project.id} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '8px 12px', borderRadius: 8,
+                background: 'rgba(255,255,255,0.02)',
+                border: '1px solid rgba(255,255,255,0.04)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
                   <span style={{ fontSize: 10 }}>{statusIcon}</span>
-                  <span style={{ fontSize: 12, fontWeight: 500 }}>/{project.name}</span>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.8)' }}>{project.name}</div>
+                    {project.techStack && (
+                      <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.2)', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {project.techStack}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)' }}>{timeStr}</span>
-              </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)' }}>{timeStr}</span>
+                  {git && git.modified + git.untracked > 0 && (
+                    <span style={{ fontSize: 9, padding: '1px 5px', borderRadius: 4, background: 'rgba(251,191,36,0.1)', color: '#fbbf24' }}>
+                      {git.modified + git.untracked}
+                    </span>
+                  )}
+                  <button onClick={() => deleteProject(project.id)}
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      fontSize: 10, color: 'rgba(255,255,255,0.1)', padding: '0 2px'
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.color = '#f87171' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255,255,255,0.1)' }}>
+                    ×
+                  </button>
+                </div>
+              </div>
             )
           })}
         </div>
+
       </div>
 
       {/* Quick Launch - Recent Skills */}

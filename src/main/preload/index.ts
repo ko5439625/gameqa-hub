@@ -28,7 +28,10 @@ const api = {
   getMemoryFiles: () => ipcRenderer.invoke('get-memory-files'),
   getMemoryContent: (fileName: string) => ipcRenderer.invoke('get-memory-content', fileName),
   setOpacity: (value: number) => ipcRenderer.invoke('set-opacity', value),
-  getJiraIssues: (projectKeys: string[]) => ipcRenderer.invoke('get-jira-issues', projectKeys),
+  getMacros: () => ipcRenderer.invoke('get-macros'),
+  runMacro: (filePath: string) => ipcRenderer.invoke('run-macro', filePath),
+  getRegisteredProjects: () => ipcRenderer.invoke('get-registered-projects'),
+  saveRegisteredProjects: (projects: Array<{ id: string; name: string; path: string; techStack: string; createdAt: number }>) => ipcRenderer.invoke('save-registered-projects', projects),
 
   onSkillsUpdated: (cb: (skills: unknown[]) => void) => {
     const h = (_e: unknown, s: unknown[]) => cb(s)

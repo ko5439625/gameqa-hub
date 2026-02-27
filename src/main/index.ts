@@ -153,8 +153,7 @@ function setupIPC(): void {
   ipcMain.handle('get-bookmarks', () => {
     return (storeService.get('bookmarks') as Array<{ name: string; url: string }>) || [
       { name: 'Claude', url: 'https://claude.ai' },
-      { name: 'GitHub', url: 'https://github.com' },
-      { name: 'Jira', url: 'https://jira.atlassian.com' }
+      { name: 'GitHub', url: 'https://github.com' }
     ]
   })
 
@@ -213,56 +212,83 @@ function setupIPC(): void {
     }
   })
 
-  // Jira 이슈 조회
-  ipcMain.handle('get-jira-issues', async (_e, projectKeys: string[]) => {
+  // 매크로 파일 스캔 (~/.claude/macros/)
+  const MACROS_DIR = join(homedir(), '.claude', 'macros')
+  if (!existsSync(MACROS_DIR)) mkdirSync(MACROS_DIR, { recursive: true })
+
+  const MACRO_EXTS = ['.ahk', '.ps1', '.bat', '.cmd', '.py', '.js', '.vbs']
+  const EXT_LABELS: Record<string, string> = {
+    '.ahk': 'AutoHotkey', '.ps1': 'PowerShell', '.bat': 'Batch',
+    '.cmd': 'Batch', '.py': 'Python', '.js': 'Node.js', '.vbs': 'VBScript'
+  }
+
+  ipcMain.handle('get-macros', () => {
     try {
-      const config = storeService.get('apiConfig') as Record<string, Record<string, string>> | null
-      const jira = config?.jira
-      if (!jira?.baseUrl || !jira?.email || !jira?.apiToken) {
-        return []
-      }
-
-      const baseUrl = jira.baseUrl.replace(/\/+$/, '')
-      const auth = Buffer.from(`${jira.email}:${jira.apiToken}`).toString('base64')
-
-      let jql = '(assignee=currentUser() OR reporter=currentUser()) AND statusCategory != Done ORDER BY updated DESC'
-      if (projectKeys.length > 0) {
-        const keys = projectKeys.map((k) => k.trim()).join(',')
-        jql = `(assignee=currentUser() OR reporter=currentUser()) AND project in (${keys}) AND statusCategory != Done ORDER BY updated DESC`
-      }
-
-      const url = `${baseUrl}/rest/api/3/search/jql?jql=${encodeURIComponent(jql)}&maxResults=30&fields=summary,status,priority`
-      const response = await fetch(url, {
-        headers: {
-          Authorization: `Basic ${auth}`,
-          Accept: 'application/json'
-        }
-      })
-
-      if (!response.ok) {
-        const text = await response.text()
-        throw new Error(`Jira API ${response.status}: ${text.slice(0, 200)}`)
-      }
-
-      const data = await response.json()
-      return (data.issues || []).map((issue: {
-        key: string
-        fields: {
-          summary: string
-          status: { name: string; statusCategory: { key: string } }
-          priority: { name: string }
-        }
-      }) => ({
-        key: issue.key,
-        summary: issue.fields.summary,
-        status: issue.fields.status?.name || '',
-        statusCategory: issue.fields.status?.statusCategory?.key || 'new',
-        priority: issue.fields.priority?.name || 'Medium'
-      }))
-    } catch (err) {
-      console.error('Jira API error:', err)
-      throw err
+      const { statSync } = require('fs')
+      const files = readdirSync(MACROS_DIR)
+        .filter((f: string) => MACRO_EXTS.some((ext) => f.toLowerCase().endsWith(ext)))
+        .map((f: string) => {
+          const filePath = join(MACROS_DIR, f)
+          const ext = '.' + f.split('.').pop()!.toLowerCase()
+          // 첫 줄에서 설명 추출 (# 또는 ; 또는 // 또는 REM 주석)
+          let description = EXT_LABELS[ext] || ext
+          try {
+            const firstLines = readFileSync(filePath, 'utf-8').split('\n').slice(0, 3)
+            for (const line of firstLines) {
+              const match = line.match(/^(?:#|;|\/\/|REM)\s*(.+)/)
+              if (match) { description = match[1].trim(); break }
+            }
+          } catch { /* ignore */ }
+          return {
+            name: f,
+            path: filePath,
+            ext,
+            description,
+            modifiedTime: statSync(filePath).mtime.getTime()
+          }
+        })
+        .sort((a: { modifiedTime: number }, b: { modifiedTime: number }) => b.modifiedTime - a.modifiedTime)
+      return files
+    } catch {
+      return []
     }
+  })
+
+  ipcMain.handle('run-macro', (_e, filePath: string) => {
+    try {
+      if (!filePath.startsWith(MACROS_DIR)) {
+        return { success: false, error: 'Invalid macro path' }
+      }
+      const ext = '.' + filePath.split('.').pop()!.toLowerCase()
+      const { execFile } = require('child_process')
+
+      const runners: Record<string, [string, string[]]> = {
+        '.ahk': ['cmd.exe', ['/c', 'start', '', filePath]],
+        '.ps1': ['powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', filePath]],
+        '.bat': ['cmd.exe', ['/c', filePath]],
+        '.cmd': ['cmd.exe', ['/c', filePath]],
+        '.py': ['python', [filePath]],
+        '.js': ['node', [filePath]],
+        '.vbs': ['cscript.exe', [filePath]]
+      }
+
+      const runner = runners[ext]
+      if (!runner) return { success: false, error: `Unsupported extension: ${ext}` }
+
+      execFile(runner[0], runner[1], { cwd: MACROS_DIR })
+      return { success: true }
+    } catch (err) {
+      return { success: false, error: (err as Error).message }
+    }
+  })
+
+  // 프로젝트 등록/관리
+  ipcMain.handle('get-registered-projects', () => {
+    return (storeService.get('registeredProjects') as Array<{ id: string; name: string; path: string; techStack: string; createdAt: number }>) || []
+  })
+
+  ipcMain.handle('save-registered-projects', (_e, projects: Array<{ id: string; name: string; path: string; techStack: string; createdAt: number }>) => {
+    storeService.set('registeredProjects', projects)
   })
 
   // 메모리 히스토리 - ~/.claude/projects/*/memory/ 폴더 읽기
@@ -341,7 +367,16 @@ app.whenReady().then(async () => {
 
   await skillsService.init()
   skillsService.watch((skills) => { mainWindow?.webContents.send('skills-updated', skills) })
-  gitService.startPolling((statuses) => { mainWindow?.webContents.send('git-status-updated', statuses) }, skillsService.getProjects())
+
+  // Git polling: 스킬 기반 프로젝트 + 등록된 프로젝트 모두 포함
+  const registeredProjects = (storeService.get('registeredProjects') as Array<{ id: string; name: string; path: string; techStack: string; createdAt: number }>) || []
+  const allProjects = [
+    ...skillsService.getProjects(),
+    ...registeredProjects.map((p) => ({ name: p.name, path: p.path, techStack: p.techStack }))
+  ]
+  // 경로 중복 제거
+  const uniqueProjects = allProjects.filter((p, i, arr) => arr.findIndex((x) => x.path === p.path) === i)
+  gitService.startPolling((statuses) => { mainWindow?.webContents.send('git-status-updated', statuses) }, uniqueProjects)
 })
 
 app.on('will-quit', () => { globalShortcut.unregisterAll(); gitService.stopPolling() })
