@@ -6,7 +6,7 @@ import { homedir } from 'os'
 export type Skill = {
   name: string
   description: string
-  category: 'dev' | 'idea' | 'work' | 'more'
+  category: 'qa' | 'ux' | 'dev' | 'analysis' | 'research' | 'docs' | 'blog' | 'more'
   projectPath?: string
   techStack?: string
 }
@@ -19,30 +19,41 @@ type Project = {
 
 const SKILLS_DIR = join(homedir(), '.claude', 'skills')
 
-// 기존 스킬 매핑 (폴백)
+// Game QA 스킬 매핑 (폴백)
 const CATEGORY_MAP: Record<string, Skill['category']> = {
-  개발: 'dev',
-  확률: 'dev',
-  확률확인: 'dev',
-  지라: 'dev',
-  포폴: 'dev',
-  DIFF: 'dev',
-  영상분석: 'dev',
-  아이디어: 'idea',
-  업무: 'work',
-  QA: 'work',
-  회고: 'work',
   시작: 'more',
-  리서치: 'more',
-  블로그등록: 'more',
-  허브: 'dev',
-  PRD: 'work'
+  신규도구: 'dev',
+  개선: 'dev',
+  매크로: 'dev',
+  테스트설계: 'qa',
+  버그리포트: 'qa',
+  QA체크리스트: 'qa',
+  탐색적테스트: 'qa',
+  회귀테스트: 'qa',
+  로컬분석: 'analysis',
+  유저행동: 'analysis',
+  빌드비교: 'analysis',
+  경쟁작분석: 'research',
+  트렌드: 'research',
+  발표: 'docs',
+  체크리스트: 'docs',
+  포트폴리오: 'docs',
+  테스트리포트: 'docs',
+  문서기타: 'docs',
+  사용성평가: 'ux',
+  플레이테스트: 'ux',
+  피드백정리: 'ux',
+  블로그: 'blog',
 }
 
 // SKILL.md 내용 기반 자동 분류
-const DEV_KEYWORDS = ['프로젝트', '경로:', '기술 스택', '코드', '개발', '빌드', '배포', 'git', 'npm', 'python', 'react', 'next']
-const WORK_KEYWORDS = ['업무', '할 일', '테스트', '체크리스트', '버그', '리포트', '회고', 'KPT', '우선순위', '일정', 'PRD', '설계']
-const IDEA_KEYWORDS = ['아이디어', '브레인스토밍', '아이디어 폭발', '주제 선택']
+const DEV_KEYWORDS = ['도구', '스크립트', '자동화', '매크로', '코드', '개발', '빌드', 'python', 'node', 'git']
+const QA_KEYWORDS = ['테스트', '버그', 'QA', '체크리스트', '회귀', '탐색', '케이스', 'TC', '리포트', '검증']
+const UX_KEYWORDS = ['사용성', '휴리스틱', '플레이테스트', 'UX', 'UI', '피드백', '유저', '접근성', '온보딩']
+const ANALYSIS_KEYWORDS = ['분석', '로그', '크래시', '데이터', '통계', '패턴', '비교', '빌드']
+const RESEARCH_KEYWORDS = ['리서치', '조사', '트렌드', '경쟁', '벤치마크', '시장']
+const DOCS_KEYWORDS = ['문서', '발표', '리포트', '보고서', '포트폴리오', '회의록', '제안서']
+const BLOG_KEYWORDS = ['블로그', '포스팅', 'TIL', '회고', '정리']
 
 function autoDetectCategory(name: string, content: string): Skill['category'] {
   // 1. 하드코딩 맵에 있으면 그걸 사용
@@ -51,19 +62,33 @@ function autoDetectCategory(name: string, content: string): Skill['category'] {
   // 2. frontmatter에 category 필드가 있으면 사용
   const fmMatch = content.match(/^---\n([\s\S]*?)\n---/)
   if (fmMatch) {
-    const catMatch = fmMatch[1].match(/category:\s*(dev|idea|work|more)/)
+    const catMatch = fmMatch[1].match(/category:\s*(qa|ux|dev|analysis|research|docs|blog|more)/)
     if (catMatch) return catMatch[1] as Skill['category']
   }
 
-  // 3. 내용 기반 키워드 분류
+  // 3. 내용 기반 키워드 분류 (QA 우선 - QA 워크스테이션)
   const lower = content.toLowerCase()
+  const qaScore = QA_KEYWORDS.filter((kw) => lower.includes(kw.toLowerCase())).length
+  const uxScore = UX_KEYWORDS.filter((kw) => lower.includes(kw.toLowerCase())).length
   const devScore = DEV_KEYWORDS.filter((kw) => lower.includes(kw.toLowerCase())).length
-  const workScore = WORK_KEYWORDS.filter((kw) => lower.includes(kw.toLowerCase())).length
-  const ideaScore = IDEA_KEYWORDS.filter((kw) => lower.includes(kw.toLowerCase())).length
+  const analysisScore = ANALYSIS_KEYWORDS.filter((kw) => lower.includes(kw.toLowerCase())).length
+  const researchScore = RESEARCH_KEYWORDS.filter((kw) => lower.includes(kw.toLowerCase())).length
+  const docsScore = DOCS_KEYWORDS.filter((kw) => lower.includes(kw.toLowerCase())).length
+  const blogScore = BLOG_KEYWORDS.filter((kw) => lower.includes(kw.toLowerCase())).length
 
-  if (ideaScore >= 2) return 'idea'
-  if (devScore > workScore && devScore >= 2) return 'dev'
-  if (workScore >= 2) return 'work'
+  // Priority: qa > ux > analysis > dev > research > docs > blog
+  const scores: Array<[Skill['category'], number]> = [
+    ['qa', qaScore],
+    ['ux', uxScore],
+    ['analysis', analysisScore],
+    ['dev', devScore],
+    ['research', researchScore],
+    ['docs', docsScore],
+    ['blog', blogScore],
+  ]
+
+  const best = scores.sort((a, b) => b[1] - a[1])[0]
+  if (best[1] >= 2) return best[0]
 
   // 4. projectPath가 있으면 dev
   if (content.match(/^-\s*경로:/m)) return 'dev'

@@ -7,9 +7,13 @@ interface SkillListProps {
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
+  qa: 'border-cat-qa/30',
+  ux: 'border-cat-ux/30',
   dev: 'border-cat-dev/30',
-  idea: 'border-cat-idea/30',
-  work: 'border-cat-work/30',
+  analysis: 'border-cat-analysis/30',
+  research: 'border-cat-research/30',
+  docs: 'border-cat-docs/30',
+  blog: 'border-cat-blog/30',
   more: 'border-cat-more/30'
 }
 

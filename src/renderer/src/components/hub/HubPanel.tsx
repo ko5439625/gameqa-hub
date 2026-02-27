@@ -2,10 +2,14 @@ import { useHubStore } from '../../store/useHubStore'
 import { useRef, useCallback } from 'react'
 
 const CATEGORIES = [
-  { id: 'dev' as const, label: '개발', icon: '⌨', color: '#60a5fa' },
-  { id: 'idea' as const, label: '아이디어', icon: '💡', color: '#f59e0b' },
-  { id: 'work' as const, label: '업무', icon: '📋', color: '#34d399' },
-  { id: 'more' as const, label: '더보기', icon: '⚡', color: '#a78bfa' }
+  { id: 'qa' as const,       label: 'QA',       icon: '🎯', color: '#ef4444' },
+  { id: 'ux' as const,       label: 'UX',       icon: '👁', color: '#8b5cf6' },
+  { id: 'dev' as const,      label: '개발',      icon: '⌨',  color: '#60a5fa' },
+  { id: 'analysis' as const, label: '분석',      icon: '📊', color: '#f59e0b' },
+  { id: 'research' as const, label: '시장조사',   icon: '🔍', color: '#10b981' },
+  { id: 'docs' as const,     label: '문서생성',   icon: '📋', color: '#34d399' },
+  { id: 'blog' as const,     label: '블로그',    icon: '✏',  color: '#ec4899' },
+  { id: 'more' as const,     label: '더보기',    icon: '⚡', color: '#a78bfa' },
 ]
 
 export default function HubPanel(): JSX.Element {
@@ -63,7 +67,7 @@ export default function HubPanel(): JSX.Element {
           background: 'linear-gradient(90deg, #a78bfa, #60a5fa)',
           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
         }}>
-          Sophia Hub
+          GameQA Hub
         </span>
         <div style={{ display: 'flex', gap: 4 }}>
           <button

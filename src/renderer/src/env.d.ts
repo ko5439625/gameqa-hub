@@ -3,7 +3,7 @@
 type Skill = {
   name: string
   description: string
-  category: 'dev' | 'idea' | 'work' | 'more'
+  category: 'qa' | 'ux' | 'dev' | 'analysis' | 'research' | 'docs' | 'blog' | 'more'
   projectPath?: string
   techStack?: string
 }

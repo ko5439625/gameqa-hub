@@ -17,7 +17,7 @@ export class LaunchService {
       const claude = this.claudePath.replace(/\//g, '\\')
 
       // batch 파일로 실행하여 Windows 쉘 따옴표/인코딩 문제 방지
-      const batPath = join(tmpdir(), 'sophia-launch.bat')
+      const batPath = join(tmpdir(), 'gameqa-launch.bat')
       const batContent = `@echo off\r\nchcp 65001 >nul 2>&1\r\nset CLAUDECODE=\r\ncd /d "${dir}"\r\n"${claude}" "/${skillName}"\r\n`
       writeFileSync(batPath, batContent, 'utf-8')
 

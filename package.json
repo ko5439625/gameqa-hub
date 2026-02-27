@@ -1,7 +1,7 @@
 {
-  "name": "sophia-hub",
+  "name": "gameqa-hub",
   "version": "1.0.0",
-  "description": "Sophia Workspace Hub - Electron transparent desktop widget",
+  "description": "GameQA Hub - Game QA Workspace Desktop Widget",
   "main": "./out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
@@ -12,8 +12,8 @@
     "postinstall": "electron-vite build"
   },
   "build": {
-    "appId": "com.sophia.hub",
-    "productName": "Sophia Hub",
+    "appId": "com.gameqa.hub",
+    "productName": "GameQA Hub",
     "directories": {
       "output": "release"
     },

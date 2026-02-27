@@ -7,7 +7,7 @@ export class StoreService {
   private filePath: string
 
   constructor() {
-    const userDataPath = app?.getPath?.('userData') || join(process.env['APPDATA'] || '', 'sophia-hub')
+    const userDataPath = app?.getPath?.('userData') || join(process.env['APPDATA'] || '', 'gameqa-hub')
     if (!existsSync(userDataPath)) {
       mkdirSync(userDataPath, { recursive: true })
     }

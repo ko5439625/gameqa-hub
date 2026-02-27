@@ -26,10 +26,10 @@ app.whenReady().then(() => {
       <div style="font-size:48px; font-weight:bold;
                   background:linear-gradient(135deg,#7c3aed,#3b82f6);
                   -webkit-background-clip:text; -webkit-text-fill-color:transparent;">
-        S
+        G
       </div>
       <div style="font-size:14px; margin-top:8px; color:rgba(255,255,255,0.7);">
-        Sophia Hub - 테스트 윈도우
+        GameQA Hub - 테스트 윈도우
       </div>
       <button onclick="document.body.style.background='#7c3aed'"
               style="margin-top:20px; padding:10px 24px; border-radius:8px; border:none;

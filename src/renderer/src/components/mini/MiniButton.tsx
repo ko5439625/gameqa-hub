@@ -51,7 +51,7 @@ export default function MiniButton(): JSX.Element {
           fontSize: 24, fontWeight: 'bold', color: 'white',
           userSelect: 'none'
         }}>
-          S
+          G
         </span>
       </div>
     </div>

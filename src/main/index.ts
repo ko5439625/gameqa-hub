@@ -5,7 +5,7 @@ import { tmpdir, homedir } from 'os'
 import { existsSync, rmSync, mkdirSync, writeFileSync, unlinkSync, readdirSync, readFileSync } from 'fs'
 
 // GPU 캐시 에러 방지
-const sessionPath = join(tmpdir(), 'sophia-hub-session')
+const sessionPath = join(tmpdir(), 'gameqa-hub-session')
 app.setPath('sessionData', sessionPath)
 const gpuCache = join(app.getPath('userData'), 'GPUCache')
 if (existsSync(gpuCache)) {
@@ -154,7 +154,6 @@ function setupIPC(): void {
     return (storeService.get('bookmarks') as Array<{ name: string; url: string }>) || [
       { name: 'Claude', url: 'https://claude.ai' },
       { name: 'GitHub', url: 'https://github.com' },
-      { name: 'sophia.ko', url: 'https://sophia-ko.vercel.app' },
       { name: 'Jira', url: 'https://jira.atlassian.com' }
     ]
   })
@@ -320,7 +319,7 @@ function setupTray(): void {
     'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAFPklEQVR4nO1XTWhcVRT+7r3vb97MZNLoykI3I9plQdCNdtHWlRvpFPyHgsSFxSQ0KTVWUFQoJUntpETFbLop3Vhw46o/i6qgrroUoZuCOy1Im5n3c3/k3Pvey/wk2ja6EDyPw0xu7rvnO+fc850zwP+yQ5k5fGVH77MHMta5OuXxoMO5d4AzsY8xtgeMxWCmZ5i5raFuasjr0mSXVy8euvOPAZg7cm13GMSLgR8dE9wHYwLGMGhtwDiD4QZgBhrKqkIOpbO1XCenuxcO/bojACdf/X46rjXORWEt9r0QQnhgENAGUNogVwpSKweAaRgLQEKZDFKnvVwlc2fX968/FID33vhxqVlvLsS1BqIwgu+HEFwA4FAApNLIpESaS+RKwhAApqEtgBySQKgUmeotr3z27IkHArD4+g9LrebkQqPeRD2uFwACCMFgGKAMkEtY40mWo5+mUEaNRCGnKCBXCTK5sbxyfhwE28r4wkvfTk+2pr5sNVtoNhyAWiQQhAD3AGO9B1IJJBmQpBq9NEM/zUai4FJBAHLVR5rfe+tsdzgdbNT4bOfa7onGrl8mW7viEkCj7iGuA2EECA82/FlhvJ8C/QToJQobCUXBARiPQh9ZvtFLsrtPdLubF5NfWspeHATgi2gx8Gtx4EcIghBh4FnDtRioN4H6BByYGmxE/ADwrAp4vgcuuFNPQHieU9+H5wfwgjD2g2hx2wjMdK5O1YLW75OtKUxOtNCamECz6aE5ATRIm8CTz+NWuf/GV2hv9Ml7oDO9ud493Wu7NJSpsBWBTPaRZvfQT/94ZHXF8YQ3CIBIhuqcM2GVMQ7G7aXHU4c3DZSy/8j4mk3jYmzXP12+12aGgxk6z4OAB2F8eDroAFgfS4FlOCozw2HAocHsbZcaDyVEUsymg4NZFTY13PMOVDZfORF8Xf3BxD7yXGtHMlJr5Ao4eHTI098GFH+1Pne8fosJBsa5A2LVgthX2cQgYsftUCCG08ilsrd9R8IZYEGwwe97qn9fKlJguxpjcbmxZLgkG4v/o48/9twz9Hk/6+UdcloBiWdOXRmvgpOv/bQRRs04CGL4QWRLpxZHCGoB3nyXuzSsfHO0emH+hQvV9y3Wu5/32lUlaEdIWd5Dmt7tnTn1dJ32DFUBtVQws5caiyk0yXNICzMaNfpzoeNgqvjaUwHjzqJz7dnG3C63eIP7XT9Xey2fV2osx69+1G+Dc8y8H5YXcu8QgAFZ/SJto3jXPSU9a2itSG9uA0Be11AvE43aF5gGswdxexjjBufPpO0yn+AovpdKHrrPQeP0WBDOOLSW14eCVApNMnaYgLR5K4EMKx1eGBtRWqfhZGg/GaYuqekeSCiVQ8rs8pYAVi8eukOTDFEnNZHtgICXQIYVo4bthLRpWMmMdG31k81xjWNEaIyiSUaWIKilWiB0mEuLDelQRIocV/xPj3LvKgklrdeQedrL8+T0oD0+CoBmOBqjaJKhBlJFw+TWG21KMA6Q89IZdOr22HcKr6VMyTjyPJnrfjw8IzJsI/Nvf7cUhPUFywdBaFsqtVZmqZSaFLesVl3AIhK2goxyYbeep8izBFm6sbzywX1ORKXMv0Mg4gUCQKREIDgNpQRAEIhNAFUqbKlVl816nqW9LY2T/O1UfHz2xrQfROdomBAEgqJAHU3wohRJy7HclZrzvsr53NkPH3IqLmV29tpummSEHxyzUbAARNVkSpYrSKbM/RpduNGc7+yX0fzVKc8POtTPqaXarsaLX0bG3CaGI5KhOh8stX9VZoqu9p+VPwEJdF/RxcM0twAAAABJRU5ErkJggg=='
   )
   tray = new Tray(icon)
-  tray.setToolTip('Sophia Hub')
+  tray.setToolTip('GameQA Hub')
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Show/Hide', click: () => { mainWindow?.isVisible() ? mainWindow.hide() : mainWindow?.show() } },
     { type: 'separator' },

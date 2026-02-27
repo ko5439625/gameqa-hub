@@ -49,7 +49,7 @@ export default function Dashboard(): JSX.Element {
             background: 'linear-gradient(135deg, #c4b5fd, #93c5fd)',
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
           }}>
-            Sophia Hub
+            GameQA Hub
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, WebkitAppRegion: 'no-drag' as never }}>

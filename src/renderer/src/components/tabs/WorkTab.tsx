@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react'
 import { useHubStore } from '../../store/useHubStore'
 
-const CATEGORIES: Array<{ id: 'dev' | 'idea' | 'work' | 'more'; label: string; icon: string; color: string }> = [
-  { id: 'dev', label: '개발', icon: '⌨', color: '#60a5fa' },
-  { id: 'idea', label: '아이디어', icon: '💡', color: '#f59e0b' },
-  { id: 'work', label: '업무', icon: '📋', color: '#34d399' },
-  { id: 'more', label: '더보기', icon: '⚡', color: '#a78bfa' }
+const CATEGORIES: Array<{id: Skill['category']; label: string; icon: string; color: string}> = [
+  { id: 'qa',       label: 'QA',       icon: '🎯', color: '#ef4444' },
+  { id: 'ux',       label: 'UX',       icon: '👁', color: '#8b5cf6' },
+  { id: 'dev',      label: '개발',      icon: '⌨',  color: '#60a5fa' },
+  { id: 'analysis', label: '분석',      icon: '📊', color: '#f59e0b' },
+  { id: 'research', label: '시장조사',   icon: '🔍', color: '#10b981' },
+  { id: 'docs',     label: '문서생성',   icon: '📋', color: '#34d399' },
+  { id: 'blog',     label: '블로그',    icon: '✏',  color: '#ec4899' },
+  { id: 'more',     label: '더보기',    icon: '⚡', color: '#a78bfa' },
 ]
 
 interface CmdItem { cmd: string; desc: string; usage: string }

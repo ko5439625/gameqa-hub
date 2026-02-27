@@ -271,7 +271,7 @@ export default function HomeTab(): JSX.Element {
           background: 'linear-gradient(135deg, #c4b5fd, #93c5fd)',
           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
         }}>
-          {getGreeting()}, sophia
+          {getGreeting()}
         </div>
         <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>
           {getDateStr()}

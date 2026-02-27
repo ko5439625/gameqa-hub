@@ -2,7 +2,7 @@ import { motion } from 'framer-motion'
 import { useHubStore } from '../../store/useHubStore'
 
 interface CategoryCardProps {
-  id: 'dev' | 'idea' | 'work' | 'more'
+  id: 'qa' | 'ux' | 'dev' | 'analysis' | 'research' | 'docs' | 'blog' | 'more'
   label: string
   icon: string
   color: string
@@ -10,9 +10,13 @@ interface CategoryCardProps {
 }
 
 const BG_MAP: Record<string, string> = {
+  'text-cat-qa': 'bg-cat-qa/10 border-cat-qa/20 hover:bg-cat-qa/20',
+  'text-cat-ux': 'bg-cat-ux/10 border-cat-ux/20 hover:bg-cat-ux/20',
   'text-cat-dev': 'bg-cat-dev/10 border-cat-dev/20 hover:bg-cat-dev/20',
-  'text-cat-idea': 'bg-cat-idea/10 border-cat-idea/20 hover:bg-cat-idea/20',
-  'text-cat-work': 'bg-cat-work/10 border-cat-work/20 hover:bg-cat-work/20',
+  'text-cat-analysis': 'bg-cat-analysis/10 border-cat-analysis/20 hover:bg-cat-analysis/20',
+  'text-cat-research': 'bg-cat-research/10 border-cat-research/20 hover:bg-cat-research/20',
+  'text-cat-docs': 'bg-cat-docs/10 border-cat-docs/20 hover:bg-cat-docs/20',
+  'text-cat-blog': 'bg-cat-blog/10 border-cat-blog/20 hover:bg-cat-blog/20',
   'text-cat-more': 'bg-cat-more/10 border-cat-more/20 hover:bg-cat-more/20'
 }
 

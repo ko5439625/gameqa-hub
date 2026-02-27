@@ -191,7 +191,7 @@ function ApiSettingsPage(): JSX.Element {
         { key: 'baseUrl', label: 'URL', placeholder: 'https://your-team.atlassian.net' },
         { key: 'email', label: 'Email', placeholder: 'your-email@company.com' },
         { key: 'apiToken', label: 'API Token', placeholder: 'ATATT3x...', secret: true },
-        { key: 'projectKeys', label: '프로젝트 키', placeholder: 'PLT, SOPHIA (쉼표 구분, 비워두면 전체)' }
+        { key: 'projectKeys', label: '프로젝트 키', placeholder: 'QA, GAMEQA (쉼표 구분, 비워두면 전체)' }
       ]
     },
     {
@@ -383,7 +383,7 @@ function RoutinesPage(): JSX.Element {
   const [saved, setSaved] = useState(false)
 
   // 카테고리별 스킬 그룹핑
-  const categoryLabels: Record<string, string> = { dev: '개발', idea: '아이디어', work: '업무', more: '더보기' }
+  const categoryLabels: Record<string, string> = { qa: 'QA', ux: 'UX', dev: '개발', analysis: '분석', research: '시장조사', docs: '문서생성', blog: '블로그', more: '더보기' }
   const skillsByCategory = skills.reduce<Record<string, typeof skills>>((acc, s) => {
     const cat = s.category || 'more'
     if (!acc[cat]) acc[cat] = []
