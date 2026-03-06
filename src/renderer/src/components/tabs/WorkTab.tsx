@@ -12,6 +12,34 @@ const CATEGORIES: Array<{id: Skill['category']; label: string; icon: string; col
   { id: 'more',     label: '더보기',    icon: '⚡', color: '#a78bfa' },
 ]
 
+// 스킬별 초보자용 설명 (마우스 오버 툴팁)
+const SKILL_TOOLTIPS: Record<string, string> = {
+  시작: '어떤 스킬을 쓸지 모를 때 여기서 시작하세요. 카테고리별로 안내해줍니다.',
+  신규도구: 'QA 업무에 필요한 새로운 도구나 프로그램을 처음부터 만들어줍니다.',
+  개선: '이미 만들어둔 도구나 스크립트의 성능/기능/사용성을 개선합니다.',
+  매크로: '반복되는 수동 작업을 자동화하는 스크립트를 만들어줍니다. (클릭, 키입력 등)',
+  테스트설계: '게임 기능에 대한 테스트 케이스(TC)와 시나리오를 체계적으로 설계합니다.',
+  버그리포트: '발견한 버그를 재현 절차, 심각도 포함한 정식 리포트로 작성합니다.',
+  QA체크리스트: '빌드 검증, 릴리즈 전 점검 등 상황별 QA 체크리스트를 생성합니다.',
+  탐색적테스트: '정해진 TC 없이 자유롭게 탐색하며 버그를 찾는 세션을 설계합니다.',
+  회귀테스트: '코드 변경 후 기존 기능이 깨지지 않았는지 확인할 범위를 산정합니다.',
+  로컬분석: '로그 파일, 크래시 덤프, 테스트 데이터를 분석해서 원인을 파악합니다.',
+  유저행동: '유저의 플레이 패턴, 이탈 구간, 세션 데이터를 분석합니다.',
+  빌드비교: '이전 빌드와 현재 빌드의 변경점을 비교하고 테스트 우선순위를 정합니다.',
+  경쟁작분석: '경쟁 게임의 QA 품질, UX, 유저 반응을 조사하고 벤치마크합니다.',
+  트렌드: '게임 QA 업계의 최신 도구, 방법론, AI 활용 트렌드를 리서치합니다.',
+  발표: '팀 회의, 리뷰 등에 쓸 발표 자료의 구조와 초안을 작성합니다.',
+  체크리스트: '업무 절차, 준비물, 학습 로드맵 등 범용 체크리스트를 만듭니다.',
+  포트폴리오: 'QA 경력과 프로젝트 경험을 정리한 포트폴리오/케이스스터디를 작성합니다.',
+  테스트리포트: '테스트 실행 결과를 Pass/Fail 수치, 주요 이슈 포함한 보고서로 정리합니다.',
+  문서기타: '회의록, 제안서, 기안서 등 정형화된 업무 문서를 작성합니다.',
+  사용성평가: '게임 UI/UX를 휴리스틱 평가 기법으로 체계적으로 점검합니다.',
+  플레이테스트: '유저 플레이테스트 세션을 설계하고, 관찰 결과를 기록/분석합니다.',
+  피드백정리: '스토어 리뷰, 커뮤니티, 플레이테스트 피드백을 분류하고 우선순위를 매깁니다.',
+  블로그: '현재 작업 내용이나 QA 경험을 블로그 포스팅 형식으로 정리합니다.',
+  프로젝트등록: '개발 중인 프로젝트를 Hub 홈 화면의 프로젝트 현황에 등록합니다.',
+}
+
 interface CmdItem { cmd: string; desc: string; usage: string }
 
 const COMMAND_SECTIONS: Array<{
@@ -266,6 +294,7 @@ export default function WorkTab(): JSX.Element {
   const [expandedSection, setExpandedSection] = useState<string | null>(null)
   const [copiedCmd, setCopiedCmd] = useState<string | null>(null)
   const [macroRefreshKey, setMacroRefreshKey] = useState(0)
+  const [hoveredSkill, setHoveredSkill] = useState<string | null>(null)
 
   const copyCommand = (cmd: string): void => {
     navigator.clipboard.writeText(cmd)
@@ -296,39 +325,60 @@ export default function WorkTab(): JSX.Element {
           ← 뒤로
         </button>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {filteredSkills.map((skill) => (
-            <button key={skill.name} onClick={() => launchSkill(skill.name, skill.projectPath)}
-              style={{
-                textAlign: 'left', padding: 12, borderRadius: 10,
-                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
-                cursor: 'pointer', transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.06)'
-                e.currentTarget.style.borderColor = 'rgba(167,139,250,0.2)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.03)'
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'
-              }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 13, fontWeight: 500 }}>/{skill.name}</span>
-                <span style={{
-                  fontSize: 9, padding: '3px 10px', borderRadius: 6,
-                  background: 'linear-gradient(135deg, rgba(167,139,250,0.2), rgba(96,165,250,0.2))',
-                  color: '#c4b5fd', fontWeight: 600, letterSpacing: 0.5
-                }}>
-                  실행
-                </span>
+          {filteredSkills.map((skill) => {
+            const isHovered = hoveredSkill === skill.name
+            const tooltip = SKILL_TOOLTIPS[skill.name]
+            return (
+              <div key={skill.name} style={{ position: 'relative' }}>
+                <button onClick={() => launchSkill(skill.name, skill.projectPath)}
+                  style={{
+                    textAlign: 'left', padding: 12, borderRadius: 10, width: '100%',
+                    background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+                    cursor: 'pointer', transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.06)'
+                    e.currentTarget.style.borderColor = 'rgba(167,139,250,0.2)'
+                    setHoveredSkill(skill.name)
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.03)'
+                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'
+                    setHoveredSkill(null)
+                  }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 13, fontWeight: 500 }}>/{skill.name}</span>
+                    <span style={{
+                      fontSize: 9, padding: '3px 10px', borderRadius: 6,
+                      background: 'linear-gradient(135deg, rgba(167,139,250,0.2), rgba(96,165,250,0.2))',
+                      color: '#c4b5fd', fontWeight: 600, letterSpacing: 0.5
+                    }}>
+                      실행
+                    </span>
+                  </div>
+                  <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {skill.description}
+                  </p>
+                  {skill.techStack && (
+                    <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', marginTop: 2 }}>{skill.techStack}</p>
+                  )}
+                </button>
+                {isHovered && tooltip && (
+                  <div style={{
+                    position: 'absolute', left: 0, right: 0, top: '100%', zIndex: 10,
+                    marginTop: 4, padding: '8px 12px', borderRadius: 8,
+                    background: 'rgba(30,30,46,0.95)', backdropFilter: 'blur(12px)',
+                    border: '1px solid rgba(167,139,250,0.2)',
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+                    fontSize: 11, color: 'rgba(255,255,255,0.7)', lineHeight: 1.5,
+                    animation: 'fadeIn 0.15s ease'
+                  }}>
+                    {tooltip}
+                  </div>
+                )}
               </div>
-              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {skill.description}
-              </p>
-              {skill.techStack && (
-                <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', marginTop: 2 }}>{skill.techStack}</p>
-              )}
-            </button>
-          ))}
+            )
+          })}
         </div>
       </div>
     )
